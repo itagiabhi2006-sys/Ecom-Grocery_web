@@ -7,6 +7,7 @@ import com.zsecurity.demo.repositories.FestivalProductRepo;
 import com.zsecurity.demo.repositories.FestivalRepo;
 import com.zsecurity.demo.repositories.ProdRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.*;
 
 import java.time.LocalDate;
@@ -37,6 +38,7 @@ public class FestivalService {
 
 
 
+    @Cacheable(value = "festivalOffers", sync = true)
     public List<Products> getFestivalOffers() {
         Optional<Festival> festivalOpt = getCurrentFestival();
         if (festivalOpt.isEmpty()) return Collections.emptyList();
@@ -44,10 +46,11 @@ public class FestivalService {
         List<FestivalProduct> mappings =
                 festivalProductRepo.findByFestivalId(festival.getId());
 
-        return mappings.stream()
-                .map(m -> productRepo.findById(m.getProductId()).orElse(null))
-                .filter(Objects::nonNull)
+        List<Integer> productIds = mappings.stream()
+                .map(FestivalProduct::getProductId)
                 .collect(Collectors.toList());
+
+        return productRepo.findAllById(productIds);
     }
 
 

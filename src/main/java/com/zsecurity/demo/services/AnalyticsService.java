@@ -9,6 +9,8 @@ import com.zsecurity.demo.repositories.CateRepo;
 import com.zsecurity.demo.repositories.OrderRepo;
 import com.zsecurity.demo.repositories.ProdRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,53 +29,23 @@ public class AnalyticsService {
     
     
 
+    @Cacheable(value = "trendingCategories", key = "#limit", sync = true)
     public List<AnalyticsCategoryDTO> getTrendingCategories(int limit) {
-
-        return orderRepository.findTrendingCategories(limit)
-                .stream()
-                .map(row -> {
-
-                    int categoryId = ((Number) row[0]).intValue();
-                    Long count = ((Number) row[2]).longValue();
-
-                    Categories category = cateRepo.findById(categoryId)
-                            .orElseThrow();
-
-                    return new AnalyticsCategoryDTO(category, count);
-                })
-                .toList();
+        return orderRepository.findTrendingCategories(PageRequest.of(0, limit));
     }
 
-    private AnalyticsResponseDTO mapToProductDTO(Object[] row) {
-
-        int productId = ((Number) row[0]).intValue();
-        Long count = ((Number) row[2]).longValue();
-
-        Products product = productRepo.findById(productId)
-                .orElseThrow();
-
-        return new AnalyticsResponseDTO(product, count);
-    }
-
+    @Cacheable(value = "trendingProducts", key = "#limit", sync = true)
     public List<AnalyticsResponseDTO> getTrendingProducts(int limit) {
-        return orderRepository.findTrendingProducts(limit)
-                .stream()
-                .map(this::mapToProductDTO)
-                .toList();
+        return orderRepository.findTrendingProducts(PageRequest.of(0, limit));
     }
 
+    @Cacheable(value = "mostBought", key = "#limit", sync = true)
     public List<AnalyticsResponseDTO> getMostBought(int limit) {
-        return orderRepository.findMostBought(limit)
-                .stream()
-                .map(this::mapToProductDTO)
-                .toList();
+        return orderRepository.findMostBought(PageRequest.of(0, limit));
     }
 
     public List<AnalyticsResponseDTO> getBuyAgain(Long userId, int limit) {
-        return orderRepository.findBuyAgain(userId, limit)
-                .stream()
-                .map(this::mapToProductDTO)
-                .toList();
+        return orderRepository.findBuyAgain(userId, PageRequest.of(0, limit));
     }
 
 

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
 
 @Repository
 public interface OrderRepo extends JpaRepository<Orders,Integer> {
@@ -17,56 +18,38 @@ public interface OrderRepo extends JpaRepository<Orders,Integer> {
     List<Orders> findByUserId(Users userId);
 
     // 🔥 Trending Categories
-    @Query(value = """
-        SELECT c.id, c.name, COUNT(oi.id) AS total_sales
-        FROM order_items oi
-        JOIN products p ON oi.prodid = p.id
-        JOIN categories c ON p.category_id = c.id
-        GROUP BY c.id, c.name
-        ORDER BY total_sales DESC
-        LIMIT :limit
-        """, nativeQuery = true)
-    List<Object[]> findTrendingCategories(@Param("limit") int limit);
+    @Query("SELECT new com.zsecurity.demo.dtos.AnalyticsCategoryDTO(c.id, c.name, c.imageURL, COUNT(oi.id)) " +
+           "FROM OrderItems oi JOIN oi.prodId p JOIN p.categories c " +
+           "GROUP BY c.id, c.name, c.imageURL " +
+           "ORDER BY COUNT(oi.id) DESC")
+    List<com.zsecurity.demo.dtos.AnalyticsCategoryDTO> findTrendingCategories(Pageable pageable);
 
 
     // 🔥 Trending Products
-    @Query(value = """
-        SELECT p.id, p.title, SUM(oi.quantity) AS total_sold
-        FROM order_items oi
-        JOIN products p ON oi.prodid = p.id
-        GROUP BY p.id, p.title
-        ORDER BY total_sold DESC
-        LIMIT :limit
-        """, nativeQuery = true)
-    List<Object[]> findTrendingProducts(@Param("limit") int limit);
+    @Query("SELECT new com.zsecurity.demo.dtos.AnalyticsResponseDTO(p.id, p.title, p.description, p.price, p.imageURL, p.stock, SUM(oi.quantity)) " +
+           "FROM OrderItems oi JOIN oi.prodId p " +
+           "GROUP BY p.id, p.title, p.description, p.price, p.imageURL, p.stock " +
+           "ORDER BY SUM(oi.quantity) DESC")
+    List<com.zsecurity.demo.dtos.AnalyticsResponseDTO> findTrendingProducts(Pageable pageable);
 
 
     // 🔥 Most Bought (by frequency)
-    @Query(value = """
-        SELECT p.id, p.title, COUNT(oi.id) AS times_bought
-        FROM order_items oi
-        JOIN products p ON oi.prodid = p.id
-        GROUP BY p.id, p.title
-        ORDER BY times_bought DESC
-        LIMIT :limit
-        """, nativeQuery = true)
-    List<Object[]> findMostBought(@Param("limit") int limit);
+    @Query("SELECT new com.zsecurity.demo.dtos.AnalyticsResponseDTO(p.id, p.title, p.description, p.price, p.imageURL, p.stock, COUNT(oi.id)) " +
+           "FROM OrderItems oi JOIN oi.prodId p " +
+           "GROUP BY p.id, p.title, p.description, p.price, p.imageURL, p.stock " +
+           "ORDER BY COUNT(oi.id) DESC")
+    List<com.zsecurity.demo.dtos.AnalyticsResponseDTO> findMostBought(Pageable pageable);
 
 
     // 🔥 Buy Again (User Specific)
-    @Query(value = """
-        SELECT p.id, p.title, COUNT(oi.id) AS times_bought
-        FROM orders o
-        JOIN order_items oi ON o.id = oi.order_id
-        JOIN products p ON oi.prodid = p.id
-        WHERE o.user_id = :userId
-        GROUP BY p.id, p.title
-        ORDER BY times_bought DESC
-        LIMIT :limit
-        """, nativeQuery = true)
-    List<Object[]> findBuyAgain(
+    @Query("SELECT new com.zsecurity.demo.dtos.AnalyticsResponseDTO(p.id, p.title, p.description, p.price, p.imageURL, p.stock, COUNT(oi.id)) " +
+           "FROM Orders o JOIN o.items oi JOIN oi.prodId p " +
+           "WHERE o.userId.id = :userId " +
+           "GROUP BY p.id, p.title, p.description, p.price, p.imageURL, p.stock " +
+           "ORDER BY COUNT(oi.id) DESC")
+    List<com.zsecurity.demo.dtos.AnalyticsResponseDTO> findBuyAgain(
             @Param("userId") Long userId,
-            @Param("limit") int limit);
+            Pageable pageable);
 
 
     @Query(value = """
