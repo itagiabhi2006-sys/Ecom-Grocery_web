@@ -18,15 +18,6 @@ public class AnalyticsResponseDTO {
     private int stock;
     private long totalSold;
 
-    public AnalyticsResponseDTO(int id, String title, String description, double price, String imageURL, int stock, long totalSold) {
-        this.id = id;
-        this.title = title;
-        this.description = description;
-        this.price = price;
-        this.imageURL = imageURL;
-        this.stock = stock;
-        this.totalSold = totalSold;
-    }
 
     public AnalyticsResponseDTO(Products product, long totalSold) {
         this.id = product.getId();
