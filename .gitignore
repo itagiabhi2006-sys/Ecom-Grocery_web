@@ -1,0 +1,41 @@
+# Environment variables (CRITICAL!)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Application properties with credentials
+application-dev.properties
+application-prod.properties
+application-local.properties
+*.properties.local
+
+# IDE files
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+.mvn/
+
+# Logs
+*.log
+logs/
+target/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secret files
+*.p12
+*.jks
+*.key
+*.pem
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
