@@ -7,8 +7,8 @@ import com.zsecurity.demo.dtos.ResponseOrderDetails;
 import com.zsecurity.demo.entity.*;
 import com.zsecurity.demo.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 
