@@ -72,7 +72,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(List.of("https://ecom-grocery-web.vercel.app"));
+        config.setAllowedOriginPatterns(List.of("https://ecom-grocery-web.vercel.app", "http://localhost:5173", "http://localhost:3000"));
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
 
