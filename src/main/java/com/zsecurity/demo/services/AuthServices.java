@@ -54,6 +54,46 @@ public class AuthServices {
     @Autowired
     OrderRepo orderRepo;
 
+    // ------------------------------------------------------------------
+    // Cross-site cookie helpers
+    //
+    // jakarta.servlet.http.Cookie has no setSameSite() method, so the
+    // SameSite attribute has to be written as a raw Set-Cookie header.
+    // On Railway (and most PaaS deployments) the frontend and backend
+    // live on different subdomains, which makes every API call
+    // cross-site from the browser's point of view. For a cross-site
+    // cookie to be accepted AND sent back on later requests it must be
+    // Secure + SameSite=None. Without this, login sets the cookie, the
+    // browser silently drops it on the next request, and every
+    // auth-dependent endpoint returns 400/401.
+    // ------------------------------------------------------------------
+    private void addAuthCookie(HttpServletResponse response, String name, String value, int maxAgeSeconds) {
+        String cookieHeader = String.format(
+                "%s=%s; Path=/; Max-Age=%d; HttpOnly; Secure; SameSite=None",
+                name, value, maxAgeSeconds
+        );
+        response.addHeader("Set-Cookie", cookieHeader);
+    }
+
+    private void clearAuthCookie(HttpServletResponse response, String name) {
+        String cookieHeader = String.format(
+                "%s=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=None",
+                name
+        );
+        response.addHeader("Set-Cookie", cookieHeader);
+    }
+
+    private Cookie findCookie(HttpServletRequest request, String name) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return null;
+        }
+        return Arrays.stream(cookies)
+                .filter(cookie -> name.equals(cookie.getName()))
+                .findFirst()
+                .orElse(null);
+    }
+
     public Users register(Users users) throws UserAlreadyExistsWithEmail {
         Users users1 = userRepo.findByEmail(users.getEmail()).orElse(null);
         if (users1 == null) {
@@ -79,21 +119,12 @@ public class AuthServices {
 
                 Boolean b = authentication.isAuthenticated();
                 log.info("{}", b);
+
                 String token = jwtService.generateToken(users);
-                Cookie cookie = new Cookie("jwtToken", token);
-                cookie.setHttpOnly(true);
-                cookie.setSecure(false);
-                cookie.setPath("/");
-                cookie.setMaxAge(10 * 60);
-                response.addCookie(cookie);
+                addAuthCookie(response, "jwtToken", token, 10 * 60);
 
                 String refToken = jwtService.generateRefreshToken(users);
-                Cookie cookie2 = new Cookie("refToken", refToken);
-                cookie2.setHttpOnly(true);
-                cookie2.setSecure(false);
-                cookie2.setPath("/");
-                cookie2.setMaxAge(2592000);
-                response.addCookie(cookie2);
+                addAuthCookie(response, "refToken", refToken, 2592000);
 
                 Users users1 = userRepo.findByEmail(users.getEmail()).orElseThrow();
                 users1.setIsActiveNow(true);
@@ -166,89 +197,46 @@ public class AuthServices {
 
     @Transactional
     public String refreshToken(HttpServletRequest request, HttpServletResponse response) {
-        Cookie cookie1 = Arrays.stream(request.getCookies())
-                .filter(cookie -> "jwtToken".equals(cookie.getName()))
-                .findFirst()
-                .orElse(null);
+        Cookie refCookie = findCookie(request, "refToken");
 
-        Cookie cookie2 = Arrays.stream(request.getCookies())
-                .filter(cookie -> "refToken".equals(cookie.getName()))
-                .findFirst()
-                .orElse(null);
-
-        String username = jwtService.getEmailByToken(cookie2.getValue());
-        Users users4 = userRepo.findByEmail(username).orElseThrow();
-
-        if (!(users4.getIsActiveNow())) {
-            users4.setIsActiveNow(true);
-            userRepo.save(users4);
+        if (refCookie == null) {
+            // No refresh cookie arrived at all - can't refresh anything.
+            throw new RuntimeException("No refresh token present");
         }
 
-        if (cookie1 != null) {
-            cookie1.setValue("");
-            cookie1.setPath("/");
-            cookie1.setHttpOnly(true);
-            cookie1.setMaxAge(0);
+        String email = jwtService.getEmailByToken(refCookie.getValue());
+        Users users = userRepo.findByEmail(email).orElseThrow();
+
+        if (!(users.getIsActiveNow())) {
+            users.setIsActiveNow(true);
+            userRepo.save(users);
         }
 
-        if (cookie2 != null) {
-            String token = cookie2.getValue();
-            String email = jwtService.getEmailByToken(token);
-            Users users = userRepo.findByEmail(email).orElseThrow();
-            String newToken = jwtService.generateToken(users);
-            Cookie cookie = new Cookie("jwtToken", newToken);
-            cookie.setHttpOnly(true);
-            cookie.setSecure(false);
-            cookie.setPath("/");
-            cookie.setMaxAge(10 * 60);
-            response.addCookie(cookie);
+        // Invalidate old cookies, issue fresh ones
+        String newToken = jwtService.generateToken(users);
+        addAuthCookie(response, "jwtToken", newToken, 10 * 60);
 
-            cookie2.setValue("");
-            cookie2.setPath("/");
-            cookie2.setHttpOnly(true);
-            cookie2.setMaxAge(0);
-
-            String refToken = jwtService.generateRefreshToken(users);
-            Cookie cookie3 = new Cookie("refToken", refToken);
-            cookie3.setHttpOnly(true);
-            cookie3.setSecure(false);
-            cookie3.setPath("/");
-            cookie3.setMaxAge(2592000);
-            response.addCookie(cookie3);
-        }
+        String newRefToken = jwtService.generateRefreshToken(users);
+        addAuthCookie(response, "refToken", newRefToken, 2592000);
 
         return "";
     }
 
     public String logOutcont(HttpServletRequest request, HttpServletResponse response) {
-        Cookie cookie1 = Arrays.stream(request.getCookies())
-                .filter(cookie -> "refToken".equals(cookie.getName()))
-                .findFirst()
-                .orElse(null);
+        Cookie refCookie = findCookie(request, "refToken");
 
-        Cookie cookie2 = Arrays.stream(request.getCookies())
-                .filter(cookie -> "jwtToken".equals(cookie.getName()))
-                .findFirst()
-                .orElse(null);
+        if (refCookie != null) {
+            String email = jwtService.getEmailByToken(refCookie.getValue());
+            Users users = userRepo.findByEmail(email).orElse(null);
+            if (users != null) {
+                users.setIsActiveNow(false);
+                userRepo.save(users);
+            }
+        }
 
-        String email = jwtService.getEmailByToken(cookie1.getValue());
-        Users users = userRepo.findByEmail(email).orElseThrow();
-        users.setIsActiveNow(false);
-        userRepo.save(users);
+        clearAuthCookie(response, "refToken");
+        clearAuthCookie(response, "jwtToken");
 
-        assert cookie1 != null;
-        cookie1.setValue("");
-        cookie1.setPath("/");
-        cookie1.setHttpOnly(true);
-        cookie1.setMaxAge(0);
-
-        cookie2.setValue("");
-        cookie2.setPath("/");
-        cookie2.setHttpOnly(true);
-        cookie2.setMaxAge(0);
-
-        response.addCookie(cookie1);
-        response.addCookie(cookie2);
         return "Logged out SuccessFully";
     }
 
