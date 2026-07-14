@@ -13,7 +13,7 @@ public class CacheConfig {
 
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager("trendingProducts", "trendingCategories", "mostBought", "festivalOffers", "deals");
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager("trendingProducts", "trendingCategories", "mostBought", "festivalOffers", "deals", "allProducts", "allCategories");
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .initialCapacity(10)
                 .maximumSize(500)

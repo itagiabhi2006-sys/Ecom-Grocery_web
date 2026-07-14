@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class RecommendationService {
@@ -36,6 +37,7 @@ public class RecommendationService {
 
         List<Cart> carts = cartRepository.findCartByUserId(userId);
 
+        List<Integer> productIdsToFetch = new ArrayList<>();
 
         for (UserProductInteraction i : interactions) {
             int score = (i.getViewCount() * 2) + (i.getClickCount());
@@ -44,12 +46,15 @@ public class RecommendationService {
                     i.getLastUpdated().isBefore(LocalDateTime.now().minusDays(3))) {
                 continue;
             }
-            Products product = prodRepo.findById(i.getProductId()).orElse(null);
-            if (product == null) continue;
+            productIdsToFetch.add(i.getProductId());
+        }
 
-            //  Only recommend if offer exists
-            if (product.isDealOfWeek() || product.isFestivalOffer() || product.isNormalOffer()) {
-                result.add(product);
+        if (!productIdsToFetch.isEmpty()) {
+            List<Products> fetchedProducts = prodRepo.findAllById(productIdsToFetch);
+            for (Products product : fetchedProducts) {
+                if (product.isDealOfWeek() || product.isFestivalOffer() || product.isNormalOffer()) {
+                    result.add(product);
+                }
             }
         }
 
@@ -71,12 +76,13 @@ public class RecommendationService {
         if(interactions.isEmpty()){
             return new ArrayList<>();
         }
-        List<Products> products = new ArrayList<>();
-        for (int i = 0; i < 6; i++) {
-            products.add(prodRepo.findById(interactions.get(i).getProductId()).get());
-        }
-        return products;
-
+        
+        List<Integer> productIds = interactions.stream()
+                .limit(6)
+                .map(UserProductInteraction::getProductId)
+                .collect(Collectors.toList());
+                
+        return prodRepo.findAllById(productIds);
     }
 
 

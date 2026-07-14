@@ -7,8 +7,9 @@ import com.zsecurity.demo.dtos.ResponseOrderDetails;
 import com.zsecurity.demo.entity.*;
 import com.zsecurity.demo.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -54,11 +55,13 @@ public class ProdServices   {
 
 
 
+    @Cacheable(value = "allProducts", sync = true)
     public List<Products> getAllProducts() {
         return prodRepo.findAll();
     }
 
 
+    @Cacheable(value = "allCategories", sync = true)
     public List<CategoryDto> getAllCategories() {
         return cateRepo.findAll().stream()
                 .map(c -> CategoryDto.builder()

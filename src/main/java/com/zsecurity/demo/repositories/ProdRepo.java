@@ -17,6 +17,7 @@ public interface ProdRepo extends JpaRepository<Products,Integer> {
 
     Optional<Products> findFirstByTitleContainingIgnoreCase(String title);
 
+    @org.springframework.cache.annotation.Cacheable(value = "deals", sync = true)
     List<Products> findByDealOfWeekTrue();
 
     List<Products> findByFestivalOfferTrue();
