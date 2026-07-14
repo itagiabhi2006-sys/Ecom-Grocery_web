@@ -39,7 +39,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.csrf(cust->cust.disable())
                 .authorizeHttpRequests(
-                        auth-> auth.requestMatchers("/login","/admin/login","/reg","/forget-password","/reset-password","/refresh-token","/upload","/products/**","/categories/**","/change-password","/analytics/**")
+                        auth-> auth.requestMatchers("/login","/admin/login","/reg","/forget-password","/reset-password","/refresh-token","/upload","/products","/products/**","/categories","/categories/**","/change-password","/analytics/**","/deals","/festival/**","/current-festival","/api/home/**","/error")
 
                                 .permitAll()
                                 .requestMatchers("/admin/**").hasRole("ADMIN")
