@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
+import org.springframework.scheduling.annotation.Async;
 
 import java.util.List;
 
@@ -18,6 +19,7 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
+    @Async
     public void emailGenerate(Users users) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -33,10 +35,11 @@ public class EmailService {
             );
             mailSender.send(message);
         } catch (Exception e) {
-            throw new RuntimeException(e.getLocalizedMessage());
+            System.err.println("Failed to send email: " + e.getLocalizedMessage());
         }
     }
 
+    @Async
     public void emailToReset(Users users, String otp) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -54,10 +57,11 @@ public class EmailService {
             );
             mailSender.send(message);
         } catch (Exception e) {
-            throw new RuntimeException(e.getLocalizedMessage());
+            System.err.println("Failed to send email: " + e.getLocalizedMessage());
         }
     }
 
+    @Async
     public void resetSuccessfulMessage(String email) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -73,10 +77,11 @@ public class EmailService {
             );
             mailSender.send(message);
         } catch (Exception e) {
-            throw new RuntimeException(e.getLocalizedMessage());
+            System.err.println("Failed to send email: " + e.getLocalizedMessage());
         }
     }
 
+    @Async
     public void generateMailForCreatingOrder(Users user, Orders order, List<OrderItems> items) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -125,10 +130,11 @@ public class EmailService {
             mailSender.send(message);
 
         } catch (Exception e) {
-            throw new RuntimeException(e.getLocalizedMessage());
+            System.err.println("Failed to send email: " + e.getLocalizedMessage());
         }
     }
 
+    @Async
     public void emailForAbandonedCart(Users user, List<Products> randomProducts) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -162,10 +168,11 @@ public class EmailService {
             mailSender.send(message);
 
         } catch (Exception e) {
-            throw new RuntimeException(e.getLocalizedMessage());
+            System.err.println("Failed to send email: " + e.getLocalizedMessage());
         }
     }
 
+    @Async
     public void emailForFestivalOffer(Users user, Festival festival) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -189,10 +196,11 @@ public class EmailService {
             mailSender.send(message);
 
         } catch (Exception e) {
-            throw new RuntimeException(e.getLocalizedMessage());
+            System.err.println("Failed to send email: " + e.getLocalizedMessage());
         }
     }
 
+    @Async
     public void emailForOrderStatusUpdate(Users user, Orders order, String stage, String desc) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -233,7 +241,7 @@ public class EmailService {
             mailSender.send(message);
 
         } catch (Exception e) {
-            throw new RuntimeException(e.getLocalizedMessage());
+            System.err.println("Failed to send email: " + e.getLocalizedMessage());
         }
     }
 
