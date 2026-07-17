@@ -42,7 +42,9 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
         if (path.equals("/login") || path.equals("/reg") || path.startsWith("/forget-password") || path.startsWith("/reset-password") || path.startsWith("/change-password") || path.equals("/upload") || path.equals("/refresh-token")
-                || path.startsWith("/products") || path.startsWith("/categories") || path.equals("/admin/login") || path.startsWith("/analytics")) {
+                || path.startsWith("/products") || path.startsWith("/categories") || path.equals("/admin/login") || path.startsWith("/analytics")
+                || path.startsWith("/deals") || path.startsWith("/festival") || path.equals("/current-festival") || path.startsWith("/api/home")
+                || path.equals("/verify-temptoken") || path.equals("/error") || path.startsWith("/oauth2") || path.startsWith("/login/oauth2") || path.startsWith("/all-offers")) {
             filterChain.doFilter(request, response);
             return;
         }
