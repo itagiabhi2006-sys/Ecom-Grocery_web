@@ -94,11 +94,10 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
     }
 
     private void addCookie(HttpServletResponse response, String name, String value, int maxAgeSeconds) {
-        Cookie cookie = new Cookie(name, value);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false);
-        cookie.setPath("/");
-        cookie.setMaxAge(maxAgeSeconds);
-        response.addCookie(cookie);
+        String cookieHeader = String.format(
+                "%s=%s; Path=/; Max-Age=%d; HttpOnly; Secure; SameSite=None",
+                name, value, maxAgeSeconds
+        );
+        response.addHeader("Set-Cookie", cookieHeader);
     }
 }
