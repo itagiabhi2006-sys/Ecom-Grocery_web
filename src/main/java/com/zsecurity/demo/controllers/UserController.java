@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.List;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "https://ecom-grocery-web.vercel.app"}, allowCredentials = "true")
 public class UserController {
 
     @Autowired

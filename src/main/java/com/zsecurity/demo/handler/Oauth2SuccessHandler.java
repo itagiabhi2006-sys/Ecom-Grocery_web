@@ -11,6 +11,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
@@ -35,7 +36,8 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
     @Autowired
     EmailService emailService;
 
-    private static final String FRONTEND_SUCCESS_URL = "http://localhost:5173/auth/success";
+    @Value("${frontend.success.url}")
+    private String frontendSuccessUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -85,7 +87,7 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
 
             String oneTimeToken = tempTokenService.createTempToken(email);
 
-            response.sendRedirect(FRONTEND_SUCCESS_URL + "?token=" + oneTimeToken);
+            response.sendRedirect(frontendSuccessUrl + "?token=" + oneTimeToken);
         } else {
             throw new RuntimeException();
         }
