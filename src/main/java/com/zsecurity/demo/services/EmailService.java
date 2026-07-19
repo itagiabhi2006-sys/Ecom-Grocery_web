@@ -9,6 +9,8 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 import org.springframework.scheduling.annotation.Async;
 
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.util.List;
 
 @Component
@@ -64,6 +66,16 @@ public class EmailService {
             mailSender.send(mimeMessage);
         } catch (Exception e) {
             System.err.println("Failed to send HTML email: " + e.getLocalizedMessage());
+            e.printStackTrace();
+            try (PrintWriter pw = new PrintWriter(new FileWriter("email-error.log", true))) {
+                pw.println("--- Email Error ---");
+                pw.println("To: " + to);
+                pw.println("Subject: " + subject);
+                e.printStackTrace(pw);
+                pw.println("-------------------");
+            } catch (Exception ioE) {
+                ioE.printStackTrace();
+            }
         }
     }
 
