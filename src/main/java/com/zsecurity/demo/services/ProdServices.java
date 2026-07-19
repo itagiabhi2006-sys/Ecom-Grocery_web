@@ -187,6 +187,7 @@ public class ProdServices   {
 
         orderRepo.save(order);
 
+        List<OrderItems> orderItemsList = new ArrayList<>();
         // ✅ 8. Save Items + Update Stock
         for (RefundRequest.OrderItemRequest item : items) {
 
@@ -200,6 +201,7 @@ public class ProdServices   {
                     .build();
 
             orderItemRepo.save(orderItem);
+            orderItemsList.add(orderItem);
 
             product.setStock(product.getStock() - item.getQuantity());
             prodRepo.save(product);
@@ -214,7 +216,7 @@ public class ProdServices   {
 
 
         // ✅ 10. Send Order Confirmation Email
-        emailService.generateMailForCreatingOrder(user, order, order.getItems());
+        emailService.generateMailForCreatingOrder(user, order, orderItemsList);
 
 
         // ✅ 10. Clear Cart
