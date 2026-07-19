@@ -102,7 +102,7 @@ public class AuthServices {
             users.setPasswords(passwordEncoder.encode(users.getPassword()));
             users.setOtpVerificationTime(null);
             users.setOtp(null);
-            // emailService.emailGenerate(users);
+            emailService.emailGenerate(users);
             return userRepo.save(users);
         } else {
             throw new UserAlreadyExistsWithEmail("User with email " + users1.getEmail() + " is already Exists");

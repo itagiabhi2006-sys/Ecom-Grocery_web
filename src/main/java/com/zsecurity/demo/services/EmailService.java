@@ -1,10 +1,11 @@
 package com.zsecurity.demo.services;
 
 import com.zsecurity.demo.entity.*;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 import org.springframework.scheduling.annotation.Async;
 
@@ -19,230 +20,211 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
+    private String wrapHtml(String content) {
+        return "<!DOCTYPE html>" +
+                "<html lang=\"en\">" +
+                "<head>" +
+                "<style>" +
+                "body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; color: #333; }" +
+                ".container { max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-top: 5px solid #2874f0; }" +
+                "h1 { color: #222; font-size: 24px; margin-bottom: 20px; }" +
+                "h2 { color: #444; font-size: 20px; margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; }" +
+                "p { font-size: 16px; line-height: 1.6; color: #555; margin-bottom: 15px; }" +
+                ".details-table { width: 100%; border-collapse: collapse; margin: 20px 0; }" +
+                ".details-table th, .details-table td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }" +
+                ".details-table th { background-color: #fafafa; color: #333; font-weight: 600; }" +
+                ".highlight { font-weight: bold; color: #2874f0; }" +
+                ".total-row td { font-size: 18px; font-weight: bold; background-color: #fafafa; color: #000; }" +
+                ".footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #999; font-size: 14px; }" +
+                ".btn { display: inline-block; padding: 12px 24px; background-color: #2874f0; color: white !important; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 20px; }" +
+                ".alert { padding: 15px; background-color: #fff3cd; color: #856404; border-radius: 5px; margin: 20px 0; border-left: 5px solid #ffeeba; }" +
+                ".success { background-color: #d4edda; color: #155724; border-left: 5px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0; }" +
+                "</style>" +
+                "</head>" +
+                "<body>" +
+                "<div class=\"container\">" +
+                content +
+                "<div class=\"footer\">" +
+                "&copy; " + java.time.Year.now().getValue() + " Kirani Store. All rights reserved.<br>" +
+                "Thank you for shopping with us!" +
+                "</div>" +
+                "</div>" +
+                "</body>" +
+                "</html>";
+    }
+
+    private void sendHtmlEmail(String to, String subject, String htmlContent) {
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(wrapHtml(htmlContent), true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            System.err.println("Failed to send HTML email: " + e.getLocalizedMessage());
+        }
+    }
+
     @Async
     public void emailGenerate(Users users) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(users.getEmail());
-            message.setSubject("🎉 Welcome to Abhi's App!");
-            message.setText(
-                    "Hello " + users.getUsername() + ",\n\n" +
-                            "We're thrilled to have you join our community! 🚀\n" +
-                            "Start exploring our features and make the most out of your journey with us.\n\n" +
-                            "Warm regards,\n" +
-                            "Abhi's App Team"
-            );
-            mailSender.send(message);
-        } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getLocalizedMessage());
-        }
+        String content = "<h1>🎉 Welcome to Kirani Store!</h1>" +
+                "<p>Hello <strong>" + users.getUsername() + "</strong>,</p>" +
+                "<p>We're thrilled to have you join our community! 🚀</p>" +
+                "<p>Start exploring our features and make the most out of your journey with us.</p>" +
+                "<a href=\"#\" class=\"btn\">Explore Now</a>";
+        sendHtmlEmail(users.getEmail(), "🎉 Welcome to Kirani Store!", content);
     }
 
     @Async
     public void emailToReset(Users users, String otp) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(users.getEmail());
-            message.setSubject("🔑 Password Reset Request");
-            message.setText(
-                    "Hi " + users.getUsername() + ",\n\n" +
-                            "We received a request to reset your password. \n" +
-                            "Your One-Time Password (OTP) is: " + otp + "\n\n" +
-                            "⚠️ This OTP will expire in 10 minutes.\n\n" +
-                            "If you didn't request this, please ignore this email.\n\n" +
-                            "Regards,\n" +
-                            "Abhi's App Team"
-            );
-            mailSender.send(message);
-        } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getLocalizedMessage());
-        }
+        String content = "<h1>🔑 Password Reset Request</h1>" +
+                "<p>Hi <strong>" + users.getUsername() + "</strong>,</p>" +
+                "<p>We received a request to reset your password.</p>" +
+                "<div style=\"text-align: center; margin: 30px 0;\">" +
+                "<span style=\"font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2874f0;\">" + otp + "</span>" +
+                "</div>" +
+                "<div class=\"alert\">⚠️ This OTP will expire in 10 minutes.</div>" +
+                "<p>If you didn't request this, please ignore this email.</p>";
+        sendHtmlEmail(users.getEmail(), "🔑 Password Reset Request", content);
     }
 
     @Async
     public void resetSuccessfulMessage(String email) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(email);
-            message.setSubject("✅ Password Reset Successful");
-            message.setText(
-                    "Hello,\n\n" +
-                            "Your password has been successfully reset. You can now log in with your new password.\n\n" +
-                            "If you didn't perform this action, please contact our support team immediately.\n\n" +
-                            "Best regards,\n" +
-                            "Abhi's App Security Team"
-            );
-            mailSender.send(message);
-        } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getLocalizedMessage());
-        }
+        String content = "<h1>✅ Password Reset Successful</h1>" +
+                "<p>Hello,</p>" +
+                "<div class=\"success\">Your password has been successfully reset. You can now log in with your new password.</div>" +
+                "<p>If you didn't perform this action, please contact our support team immediately.</p>";
+        sendHtmlEmail(email, "✅ Password Reset Successful", content);
     }
 
     @Async
     public void generateMailForCreatingOrder(Users user, Orders order, List<OrderItems> items) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(user.getEmail());
-            message.setSubject("🛒 Order Confirmed! Order #" + order.getId());
+        StringBuilder sb = new StringBuilder();
+        sb.append("<h1>🛒 Order Confirmed!</h1>");
+        sb.append("<p>Hello <strong>").append(user.getUsername()).append("</strong>,</p>");
+        sb.append("<p>Thank you for your order! Here's your order summary:</p>");
+        
+        sb.append("<h2>Order Details (#").append(order.getId()).append(")</h2>");
+        sb.append("<table class=\"details-table\">");
+        sb.append("<tr><th>Status</th><td><span style=\"color: #28a745; font-weight: bold;\">").append(order.getStatus()).append("</span></td></tr>");
+        sb.append("<tr><th>Payment Mode</th><td>").append(order.getPaymentMethod()).append("</td></tr>");
+        sb.append("</table>");
 
-            StringBuilder sb = new StringBuilder();
-            sb.append("Hello ").append(user.getUsername()).append(",\n\n");
-            sb.append("Thank you for your order! Here's your order summary:\n");
-            sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-            sb.append("Order ID     : #").append(order.getId()).append("\n");
-            sb.append("Order Status : ").append(order.getStatus()).append("\n");
-            sb.append("Payment Mode : ").append(order.getPaymentMethod()).append("\n");
-            sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-            sb.append("📦 Items Ordered:\n\n");
-
-            for (OrderItems item : items) {
-                sb.append("  • ").append(item.getProdId().getTitle())
-                        .append(" x").append(item.getQuantity())
-                        .append("  →  ₹").append(String.format("%.2f", item.getPrice()))
-                        .append("\n");
-            }
-
-            sb.append("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-
-            if (order.getDiscountAmount() > 0) {
-                sb.append("Discount Applied : -₹").append(order.getDiscountAmount()).append("\n");
-            }
-
-            sb.append("Total Amount     :  ₹").append(String.format("%.2f", order.getTotalPrice())).append("\n");
-            sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
-
-            UserAddressDetails addr = order.getUserAddressDetails();
-            sb.append("📍 Delivery Address:\n");
-            sb.append("   ").append(addr.getFullName()).append("\n");
-            sb.append("   ").append(addr.getAddress()).append(", ").append(addr.getCity()).append("\n");
-            sb.append("   Pincode: ").append(addr.getPincode()).append("\n");
-            sb.append("   Phone  : ").append(addr.getPhone()).append("\n\n");
-
-            sb.append("We'll notify you once your order is shipped. 🚚\n\n");
-            sb.append("Warm regards,\n");
-            sb.append("Kirani Store Team");
-
-            message.setText(sb.toString());
-            mailSender.send(message);
-
-        } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getLocalizedMessage());
+        sb.append("<h2>Items Ordered</h2>");
+        sb.append("<table class=\"details-table\">");
+        sb.append("<tr><th>Item</th><th>Qty</th><th>Price</th></tr>");
+        
+        for (OrderItems item : items) {
+            sb.append("<tr>");
+            sb.append("<td>").append(item.getProdId().getTitle()).append("</td>");
+            sb.append("<td>").append(item.getQuantity()).append("</td>");
+            sb.append("<td>₹").append(String.format("%.2f", item.getPrice())).append("</td>");
+            sb.append("</tr>");
         }
+        
+        if (order.getDiscountAmount() > 0) {
+            sb.append("<tr><td colspan=\"2\" style=\"text-align: right;\">Discount:</td><td style=\"color: #28a745;\">-₹").append(order.getDiscountAmount()).append("</td></tr>");
+        }
+        
+        sb.append("<tr class=\"total-row\"><td colspan=\"2\" style=\"text-align: right;\">Total:</td><td>₹").append(String.format("%.2f", order.getTotalPrice())).append("</td></tr>");
+        sb.append("</table>");
+
+        UserAddressDetails addr = order.getUserAddressDetails();
+        if (addr != null) {
+            sb.append("<h2>Delivery Address</h2>");
+            sb.append("<p>");
+            sb.append("<strong>").append(addr.getFullName()).append("</strong><br>");
+            sb.append(addr.getAddress()).append(", ").append(addr.getCity()).append("<br>");
+            sb.append("Pincode: ").append(addr.getPincode()).append("<br>");
+            sb.append("Phone: ").append(addr.getPhone());
+            sb.append("</p>");
+        }
+
+        sb.append("<p>We'll notify you once your order is shipped. 🚚</p>");
+        
+        sendHtmlEmail(user.getEmail(), "🛒 Order Confirmed! Order #" + order.getId(), sb.toString());
     }
 
     @Async
     public void emailForAbandonedCart(Users user, List<Products> randomProducts) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(user.getEmail());
-            message.setSubject("🛍️ You left something behind! Special picks just for you");
-
-            StringBuilder sb = new StringBuilder();
-            sb.append("Hey ").append(user.getUsername()).append("! 👋\n\n");
-            sb.append("You have items waiting in your cart at Kirani Store.\n");
-            sb.append("While you're at it, check out these special offers:\n\n");
-            sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-            sb.append("🔥 Handpicked Deals For You:\n\n");
-
-            for (Products p : randomProducts) {
-                String tag = p.isDealOfWeek() ? "Deal of the Week"
-                        : p.isFestivalOffer() ? "Festival Offer"
-                        : "Special Offer";
-                sb.append("  • ").append(p.getTitle())
-                        .append("  |  ₹").append(String.format("%.2f", p.getPrice()))
-                        .append("  [").append(tag).append("]")
-                        .append("\n");
-            }
-
-            sb.append("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-            sb.append("Don't miss out — these deals won't last long! ⏳\n\n");
-            sb.append("Warm regards,\n");
-            sb.append("Kirani Store Team");
-
-            message.setText(sb.toString());
-            mailSender.send(message);
-
-        } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getLocalizedMessage());
+        StringBuilder sb = new StringBuilder();
+        sb.append("<h1>🛍️ You left something behind!</h1>");
+        sb.append("<p>Hey <strong>").append(user.getUsername()).append("</strong>! 👋</p>");
+        sb.append("<p>You have items waiting in your cart at Kirani Store.</p>");
+        sb.append("<p>While you're at it, check out these special offers we handpicked just for you:</p>");
+        
+        sb.append("<h2>🔥 Handpicked Deals For You</h2>");
+        sb.append("<table class=\"details-table\">");
+        for (Products p : randomProducts) {
+            String tag = p.isDealOfWeek() ? "Deal of the Week"
+                    : p.isFestivalOffer() ? "Festival Offer"
+                    : "Special Offer";
+            sb.append("<tr>");
+            sb.append("<td><strong>").append(p.getTitle()).append("</strong><br><span style=\"color: #888; font-size: 12px;\">").append(tag).append("</span></td>");
+            sb.append("<td><span class=\"highlight\">₹").append(String.format("%.2f", p.getPrice())).append("</span></td>");
+            sb.append("</tr>");
         }
+        sb.append("</table>");
+        
+        sb.append("<p>Don't miss out — these deals won't last long! ⏳</p>");
+        sb.append("<a href=\"#\" class=\"btn\">Return to Cart</a>");
+
+        sendHtmlEmail(user.getEmail(), "🛍️ You left something behind! Special picks just for you", sb.toString());
     }
 
     @Async
     public void emailForFestivalOffer(Users user, Festival festival) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(user.getEmail());
-            message.setSubject("🎉 Festival Alert: " + festival.getName() + " Offers Are Live!");
+        StringBuilder sb = new StringBuilder();
+        sb.append("<h1>🎉 ").append(festival.getName()).append(" Offers Are Live!</h1>");
+        sb.append("<p>Hey <strong>").append(user.getUsername()).append("</strong>! 🎊</p>");
+        sb.append("<p>Today is ").append(festival.getName()).append(" and we have exclusive deals just for you!</p>");
+        
+        sb.append("<div style=\"background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); padding: 20px; border-radius: 8px; color: #fff; text-align: center; margin: 20px 0;\">");
+        sb.append("<h2 style=\"color: #fff; margin-top: 0; border: none;\">🛍️ ").append(festival.getName()).append("</h2>");
+        sb.append("<p style=\"color: #fff; font-size: 18px;\">Valid: ").append(festival.getStartDate()).append(" → ").append(festival.getEndDate()).append("</p>");
+        sb.append("</div>");
+        
+        sb.append("<p>Hurry! Festival deals are live for a limited time only. ⏳</p>");
+        sb.append("<p>Visit Kirani Store now and grab your favourites before they're gone!</p>");
+        sb.append("<a href=\"#\" class=\"btn\">Shop Now</a>");
 
-            StringBuilder sb = new StringBuilder();
-            sb.append("Hey ").append(user.getUsername()).append("! 🎊\n\n");
-            sb.append("Today is ").append(festival.getName()).append(" and we have exclusive deals just for you!\n\n");
-            sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-            sb.append("🛍️  Festival: ").append(festival.getName()).append("\n");
-            sb.append("📅  Valid   : ").append(festival.getStartDate()).append(" → ").append(festival.getEndDate()).append("\n");
-            sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
-            sb.append("Hurry! Festival deals are live for a limited time only. ⏳\n");
-            sb.append("Visit Kirani Store now and grab your favourites before they're gone!\n\n");
-            sb.append("Warm regards,\n");
-            sb.append("Kirani Store Team");
-
-            message.setText(sb.toString());
-            mailSender.send(message);
-
-        } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getLocalizedMessage());
-        }
+        sendHtmlEmail(user.getEmail(), "🎉 Festival Alert: " + festival.getName() + " Offers Are Live!", sb.toString());
     }
 
     @Async
     public void emailForOrderStatusUpdate(Users user, Orders order, String stage, String desc) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(user.getEmail());
-            message.setSubject(getSubjectForStage(stage) + " | Order #" + order.getId());
-
-            StringBuilder sb = new StringBuilder();
-            sb.append("Hello ").append(user.getUsername()).append(",\n\n");
-            sb.append(getBodyIntroForStage(stage)).append("\n\n");
-            sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-            sb.append("Order ID     : #").append(order.getId()).append("\n");
-            sb.append("Status       : ").append(stage).append("\n");
-            sb.append("Payment Mode : ").append(order.getPaymentMethod()).append("\n");
-
-            if (desc != null && !desc.isBlank()) {
-                sb.append("Note         : ").append(desc).append("\n");
-            }
-
-            if (stage.equals("Refund Initiated") || stage.equals("Refund Processing") || stage.equals("Refund Completed")) {
-                sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-                sb.append("💰 Refund Info:\n");
-                sb.append("   Amount : ₹").append(String.format("%.2f", order.getTotalPrice())).append("\n");
-                if (order.getRefundUpi() != null && !order.getRefundUpi().isBlank()) {
-                    sb.append("   UPI    : ").append(order.getRefundUpi()).append("\n");
-                }
-                if (order.getBankAccountNumber() != null && !order.getBankAccountNumber().isBlank()) {
-                    sb.append("   Bank   : ").append(order.getBankAccountNumber()).append("\n");
-                }
-            }
-
-            sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
-            sb.append("For any queries, feel free to reach out to us.\n\n");
-            sb.append("Warm regards,\n");
-            sb.append("Kirani Store Team");
-
-            message.setText(sb.toString());
-            mailSender.send(message);
-
-        } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getLocalizedMessage());
+        StringBuilder sb = new StringBuilder();
+        sb.append("<h1>").append(getSubjectForStage(stage)).append("</h1>");
+        sb.append("<p>Hello <strong>").append(user.getUsername()).append("</strong>,</p>");
+        sb.append("<p>").append(getBodyIntroForStage(stage)).append("</p>");
+        
+        sb.append("<h2>Order Details (#").append(order.getId()).append(")</h2>");
+        sb.append("<table class=\"details-table\">");
+        sb.append("<tr><th>Status</th><td><span class=\"highlight\">").append(stage).append("</span></td></tr>");
+        sb.append("<tr><th>Payment Mode</th><td>").append(order.getPaymentMethod()).append("</td></tr>");
+        if (desc != null && !desc.isBlank()) {
+            sb.append("<tr><th>Note</th><td>").append(desc).append("</td></tr>");
         }
+        sb.append("</table>");
+
+        if (stage.equals("Refund Initiated") || stage.equals("Refund Processing") || stage.equals("Refund Completed")) {
+            sb.append("<h2>💰 Refund Info</h2>");
+            sb.append("<table class=\"details-table\">");
+            sb.append("<tr><th>Amount</th><td>₹").append(String.format("%.2f", order.getTotalPrice())).append("</td></tr>");
+            if (order.getRefundUpi() != null && !order.getRefundUpi().isBlank()) {
+                sb.append("<tr><th>UPI</th><td>").append(order.getRefundUpi()).append("</td></tr>");
+            }
+            if (order.getBankAccountNumber() != null && !order.getBankAccountNumber().isBlank()) {
+                sb.append("<tr><th>Bank</th><td>").append(order.getBankAccountNumber()).append("</td></tr>");
+            }
+            sb.append("</table>");
+        }
+
+        sb.append("<p>For any queries, feel free to reach out to us.</p>");
+
+        sendHtmlEmail(user.getEmail(), getSubjectForStage(stage) + " | Order #" + order.getId(), sb.toString());
     }
 
     private String getSubjectForStage(String stage) {

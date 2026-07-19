@@ -214,7 +214,7 @@ public class ProdServices   {
 
 
         // ✅ 10. Send Order Confirmation Email
-       // emailService.generateMailForCreatingOrder(user, order, order.getItems());
+        emailService.generateMailForCreatingOrder(user, order, order.getItems());
 
 
         // ✅ 10. Clear Cart
